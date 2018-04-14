@@ -13,8 +13,9 @@ require(["esri/map",
 "esri/geometry/Circle",
 "esri/graphic",
 "esri/units",
+"esri/renderers/SimpleRenderer",
 "dojo/domReady!"], function(Map,
-  Point,Query,SimpleMarkerSymbol,SimpleLineSymbol,SimpleFillSymbol,Color,QueryTask,GraphicsLayer,Circle,Graphic,units) {
+  Point,Query,SimpleMarkerSymbol,SimpleLineSymbol,SimpleFillSymbol,Color,QueryTask,GraphicsLayer,Circle,Graphic,units,SimpleRenderer) {
 
 var miCentro = new Point (-101.26,28.464);
 
@@ -41,13 +42,17 @@ marker.setOutline(line);
 marker.setSize(24);
 
 
+var render = new SimpleRenderer(marker);
+
+gl.setRenderer(render);
+
 
 
 var miQuery = new Query();
 
 
-miQuery.where = "pop2000 > 1000000";
-miQuery.outFields = ["areaname","pop2000"];
+miQuery.where = "POPULATION > 100000";
+miQuery.outFields = ["*"];
 miQuery.outSpatialReference = miMapa.spatialReference;
 miQuery.returnGeometry = true;
 
@@ -56,18 +61,68 @@ miQuery.returnGeometry = true;
 
 
 
-var urlCiudadesUsa = "https://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer/0"
+var urlCiudadesUsa = "http://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/MajorCities_WebMercator/FeatureServer/0"
 var miQueryTask = new QueryTask(urlCiudadesUsa);
+
+
+
+
+
+
+
+
+
 
 
 
 miMapa.on ("click", hacerConsulta);
 
+var inputRadio = document.getElementById ("inputRadio");
+
+inputRadio.onchange = actualizaRadio;
+
+
+
+function actualizaRadio(){
+  var inputRadio2 = document.getElementById("inputRadio");
+  var radio = inputRadio2.value;
+
+  var txtRadio = document.getElementById("txtRadio");
+  txtRadio.innerHTML = radio;
+}
+
+
+/*Esto hace que cuando hagamos cambios en el span se
+vean reflejados en el texto, un onchange que hace que se actualice el cambio,
+sin esto sería imposible ya que haría el cambio después de hacer la consulta*/
+
+
+var rango = document.getElementById ("rango");
+
+rango.onchange = hacerConsulta;
+
+
+
 
 function hacerConsulta (objEvento) {
+
+  var rangoPoblación = document.getElementById("rango");
+  var rangoPob =  rangoPoblación.value;
+  var txtRango = document.getElementById("txtRango");
+  txtRango.innerHTML = rangoPob;
+
+
+var rangoPoblación2 = document.getElementById("rango");
+miQuery.where = "POPULATION >" + rangoPoblación2.value;
 var pt = objEvento.mapPoint;
+
+
+
+
+
+var rangoCirculo = document.getElementById("inputRadio");
 var circulo = new Circle(pt, {
-  radius : 1000000,
+  radius : rangoCirculo.value,
   radiusUnit: units.METERS
 });
 
@@ -97,19 +152,29 @@ miQueryTask.execute(miQuery,miCallback, miErrback);
 
 
 function miCallback (result) {
-    miMapa.graphics.clear();
+    /*miMapa.graphics.clear();*/
+
   var arrayGraficos =  result.features;
+  var ciudades = "";
+
+
   for (var i = 0; i < arrayGraficos.length; i++) {
     var gr = arrayGraficos[i]
-  gr.symbol = marker;
+  /*gr.symbol = marker;*/
+  var attributes = gr.attributes;
+  ciudades = ciudades + attributes.NAME + ",";
+  gl.add(gr);
 
-  miMapa.graphics.add(gr);
 
+  /*miMapa.graphics.add(gr);*/
   }
 
-alert ("todo esta de lujo");
+var txtCiudades = document.getElementById ("txtCiudades");
+txtCiudades.innerHTML = ciudades;
 
 };
+
+
 
 
 function miErrback () {
